@@ -52,6 +52,7 @@ jobs:
       # Output the image tags for reference
       - name: Image tags
         run: |
-          echo "Built and pushed images:"
-          echo "  - ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/techworkshop-app:${{ steps.vars.outputs.sha_short }}"
-          echo "  - ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/techworkshop-app:latest"
+          echo "Built and pushed images with tags:"
+          echo "  - Git SHA: ${{ steps.vars.outputs.sha_short }}"
+          echo "  - Tag: latest"
+          echo "Images successfully pushed to Azure Container Registry"

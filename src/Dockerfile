@@ -25,10 +25,14 @@ COPY . .
 # When building with BuildKit, the .env file will be created from a secret
 # For local builds, you can use: COPY .env .env
 # For GitHub Actions builds with secrets, the .env file will be created via RUN --mount=type=secret
-RUN --mount=type=secret,id=env_content if [ -f /run/secrets/env_content ]; then \
-    cat /run/secrets/env_content > .env; \
+RUN --mount=type=secret,id=env_content set -e; \
+    if [ -f /run/secrets/env_content ]; then \
+        cat /run/secrets/env_content > .env; \
+        echo "Successfully created .env file from secret"; \
     else \
-    echo "Warning: No secret mounted, .env file not created"; \
+        echo "ERROR: No secret mounted. .env file not created."; \
+        echo "For production builds, pass --secret id=env_content,src=.env"; \
+        exit 1; \
     fi
 
 # Expose the port (default FastAPI/uvicorn port)
