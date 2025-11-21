@@ -53,5 +53,6 @@ out/
 .azure-pipelines.yml
 *.azuredevops
 
-# Github
-.github/
+# Github (but keep workflows)
+.github/*
+!.github/workflows/
