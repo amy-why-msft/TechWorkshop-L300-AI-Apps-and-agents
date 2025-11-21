@@ -22,16 +22,19 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Copy .env file into the image (for python-dotenv)
-# When building with BuildKit, the .env file will be created from a secret
-# For local builds, you can use: COPY .env .env
-# For GitHub Actions builds with secrets, the .env file will be created via RUN --mount=type=secret
+# Priority: 1) BuildKit secret (for CI/CD), 2) Local .env file (for development)
+# For GitHub Actions builds: secret is mounted via --secret id=env_content
+# For local builds: .env file should exist in the build context
 RUN --mount=type=secret,id=env_content set -e; \
     if [ -f /run/secrets/env_content ]; then \
         cat /run/secrets/env_content > .env; \
-        echo "Successfully created .env file from secret"; \
+        echo "Successfully created .env file from BuildKit secret"; \
+    elif [ -f .env ]; then \
+        echo "Using existing .env file from build context (local development)"; \
     else \
-        echo "ERROR: No secret mounted. .env file not created."; \
-        echo "For production builds, pass --secret id=env_content,src=.env"; \
+        echo "ERROR: No .env configuration found!"; \
+        echo "For CI/CD: pass --secret id=env_content,src=<file>"; \
+        echo "For local: create .env file based on env_sample.txt"; \
         exit 1; \
     fi
 
