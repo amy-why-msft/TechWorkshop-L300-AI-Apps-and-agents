@@ -22,7 +22,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Copy .env file into the image (for python-dotenv)
-COPY .env .env
+# When building with BuildKit, the .env file will be created from a secret
+# For local builds, you can use: COPY .env .env
+# For GitHub Actions builds with secrets, the .env file will be created via RUN --mount=type=secret
+RUN --mount=type=secret,id=env_content if [ -f /run/secrets/env_content ]; then \
+    cat /run/secrets/env_content > .env; \
+    else \
+    echo "Warning: No secret mounted, .env file not created"; \
+    fi
 
 # Expose the port (default FastAPI/uvicorn port)
 EXPOSE 8000

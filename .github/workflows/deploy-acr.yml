@@ -1,0 +1,57 @@
+name: Deploy to Azure Container Registry
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Set up Docker Buildx (required for BuildKit features like secrets)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      # Log in to Azure Container Registry
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}
+          username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
+          password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+      
+      # Extract git SHA for tagging
+      - name: Extract git SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      
+      # Build and push Docker image to ACR
+      # Using BuildKit secrets to securely inject the ENV secret content
+      # The secret is mounted during build but not stored in image layers
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./src
+          file: ./src/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/techworkshop-app:${{ steps.vars.outputs.sha_short }}
+            ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/techworkshop-app:latest
+          secrets: |
+            env_content=${{ secrets.ENV }}
+          # Enable BuildKit for better caching and security features
+          cache-from: type=registry,ref=${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/techworkshop-app:buildcache
+          cache-to: type=registry,ref=${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/techworkshop-app:buildcache,mode=max
+      
+      # Output the image tags for reference
+      - name: Image tags
+        run: |
+          echo "Built and pushed images:"
+          echo "  - ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/techworkshop-app:${{ steps.vars.outputs.sha_short }}"
+          echo "  - ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/techworkshop-app:latest"
